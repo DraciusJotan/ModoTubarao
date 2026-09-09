@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modo Tubarão — seu treino em um gráfico</title>
+<meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Tudo no navegador, sem cadastro.">
+<!-- O ?v= evita cache antigo: suba o número a cada alteração em css/ ou js/ -->
+<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
+</head>
+<body>
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+<div class="oceano descendo" id="oceano" aria-hidden="true">
+  <div class="oceano-abismo"></div>
+  <div class="oceano-raios"></div>
+  <div class="oceano-bolhas">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="nadador nadador-fundo">
+    <img id="tubarao-fundo" src="assets/mascote/halteres.png" alt="">
+  </div>
+  <div class="nadador nadador-frente">
+    <img id="tubarao-frente" src="assets/mascote/corda.png" alt="">
+  </div>
+</div>
+
+<header class="topo">
+  <div class="container topo-inner">
+    <div class="marca">
+      <span class="marca-icone" aria-hidden="true">
+        <img src="assets/mascote/biceps.png" alt="">
+      </span>
+      <div>
+        <h1>Modo Tubarão</h1>
+        <p class="marca-sub">Seu treino, em um gráfico</p>
+      </div>
+    </div>
+    <div class="topo-acoes">
+      <button type="button" id="btn-tema" class="btn btn-icone" aria-pressed="false">
+        <span class="tema-icone" aria-hidden="true">☾</span>
+        <span class="sr-only">Alternar tema claro e escuro</span>
+      </button>
+      <button type="button" id="btn-registrar-topo" class="btn btn-primario">
+        <span aria-hidden="true">+</span> Registrar treino
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="abas-nav" aria-label="Seções do aplicativo">
+  <div class="container">
+    <div class="abas" role="tablist" aria-label="Seções do aplicativo">
+      <button type="button" role="tab" id="aba-dashboard" aria-controls="painel-dashboard" aria-selected="true" class="aba">
+        <img class="icone-aba" src="assets/mascote/grafico.png" alt="" aria-hidden="true">Meu progresso
+      </button>
+      <button type="button" role="tab" id="aba-biblioteca" aria-controls="painel-biblioteca" aria-selected="false" tabindex="-1" class="aba">
+        <img class="icone-aba" src="assets/mascote/coracao.png" alt="" aria-hidden="true">Biblioteca
+      </button>
+      <button type="button" role="tab" id="aba-gerador" aria-controls="painel-gerador" aria-selected="false" tabindex="-1" class="aba">
+        <img class="icone-aba" src="assets/mascote/corda.png" alt="" aria-hidden="true">Gerador de treino
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main id="conteudo" class="container">
+
+  <section id="painel-dashboard" role="tabpanel" aria-labelledby="aba-dashboard" tabindex="0" class="painel">
+
+    <section class="hero" aria-labelledby="hero-titulo">
+      <div class="hero-conteudo">
+        <h2 class="hero-titulo" id="hero-titulo">Entre no <span>Modo Tubarão</span></h2>
+        <p class="hero-texto">Um ano inteiro de treino em uma tela só. Registre a sessão, veja a sequência crescer e deixe o tubarão te cobrar.</p>
+        <div class="hero-acoes">
+          <button type="button" class="btn btn-primario btn-grande" data-abrir-registro>Registrar treino de hoje</button>
+        </div>
+        <div class="guia">
+          <button type="button" class="guia-mascote" id="guia-mascote"
+                  aria-label="Mascote do Modo Tubarão: ouvir outra dica" aria-describedby="guia-balao">
+            <img src="assets/mascote/halteres.png" alt="" aria-hidden="true">
+          </button>
+          <p class="guia-balao" id="guia-balao">Bora treinar?</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="boas-vindas" class="vazio-inicial" hidden>
+      <img class="vazio-mascote" src="assets/mascote/grafico.png" alt="" aria-hidden="true">
+      <h2>Comece marcando seu primeiro treino</h2>
+      <p>O Modo Tubarão transforma sua constância em um mapa de calor anual. Cada quadrado é um dia — quanto mais escuro o azul, mais intenso foi o treino. Nada é enviado para servidores: seus dados ficam salvos apenas neste navegador.</p>
+      <button type="button" class="btn btn-primario btn-grande" data-abrir-registro>Registrar meu primeiro treino</button>
+    </div>
+
+    <div class="cartoes-stats" id="stats">
+      <article class="cartao-stat">
+        <img class="stat-icone" src="assets/mascote/chama.png" alt="" aria-hidden="true">
+        <span class="stat-rotulo">Sequência de semanas</span>
+        <strong class="stat-valor" id="stat-sequencia">0</strong>
+        <span class="stat-nota" id="stat-sequencia-nota">semanas batendo a meta</span>
+      </article>
+      <article class="cartao-stat">
+        <img class="stat-icone" src="assets/mascote/calendario.png" alt="" aria-hidden="true">
+        <span class="stat-rotulo">Melhor sequência</span>
+        <strong class="stat-valor" id="stat-recorde">0</strong>
+        <span class="stat-nota">semanas seguidas</span>
+      </article>
+      <article class="cartao-stat">
+        <img class="stat-icone" src="assets/mascote/biceps.png" alt="" aria-hidden="true">
+        <span class="stat-rotulo">Treinos no ano</span>
+        <strong class="stat-valor" id="stat-total">0</strong>
+        <span class="stat-nota" id="stat-total-nota">últimos 12 meses</span>
+      </article>
+      <article class="cartao-stat">
+        <img class="stat-icone" src="assets/mascote/halteres.png" alt="" aria-hidden="true">
+        <span class="stat-rotulo">Volume total</span>
+        <strong class="stat-valor" id="stat-volume">0</strong>
+        <span class="stat-nota">kg levantados</span>
+      </article>
+    </div>
+
+    <section class="bloco" aria-labelledby="titulo-heatmap">
+      <div class="bloco-topo">
+        <div class="titulo-com-icone">
+          <img class="icone-secao" src="assets/mascote/calendario.png" alt="" aria-hidden="true">
+          <div>
+            <h2 id="titulo-heatmap">Mapa de consistência</h2>
+            <p class="bloco-sub" id="heatmap-resumo">Últimos 12 meses de treino</p>
+          </div>
+        </div>
+        <div class="bloco-acoes">
+          <label class="campo-inline">
+            <span>Meta semanal</span>
+            <select id="meta-semanal" class="select-mini">
+              <option value="2">2x</option>
+              <option value="3" selected>3x</option>
+              <option value="4">4x</option>
+              <option value="5">5x</option>
+              <option value="6">6x</option>
+            </select>
+          </label>
+          <button type="button" id="btn-exportar" class="btn btn-secundario">Exportar imagem</button>
+        </div>
+      </div>
+
+      <div class="heatmap-wrap">
+        <div class="heatmap-dias" aria-hidden="true">
+          <span></span><span>Seg</span><span></span><span>Qua</span><span></span><span>Sex</span><span></span>
+        </div>
+        <div class="heatmap-scroll" id="heatmap-scroll">
+          <div class="heatmap-meses" id="heatmap-meses" aria-hidden="true"></div>
+          <div class="heatmap-grid" id="heatmap-grid" role="grid" aria-label="Mapa de calor de treinos dos últimos 12 meses"></div>
+        </div>
+      </div>
+
+      <div class="heatmap-legenda">
+        <span class="legenda-texto">Menos</span>
+        <span class="celula nivel-0" aria-hidden="true"></span>
+        <span class="celula nivel-1" aria-hidden="true"></span>
+        <span class="celula nivel-2" aria-hidden="true"></span>
+        <span class="celula nivel-3" aria-hidden="true"></span>
+        <span class="celula nivel-4" aria-hidden="true"></span>
+        <span class="legenda-texto">Mais</span>
+      </div>
+      <p class="dica-teclado">Dica: clique em um quadrado para ver ou registrar o treino daquele dia.</p>
+    </section>
+
+    <div class="grade-duas">
+      <section class="bloco" aria-labelledby="titulo-grupos">
+        <div class="titulo-com-icone">
+          <img class="icone-secao" src="assets/mascote/grafico.png" alt="" aria-hidden="true">
+          <div>
+            <h2 id="titulo-grupos">Distribuição por grupo muscular</h2>
+            <p class="bloco-sub">Nos últimos 12 meses — útil para achar o grupo que você anda esquecendo.</p>
+          </div>
+        </div>
+        <ul class="barras" id="barras-grupos"></ul>
+      </section>
+
+      <section class="bloco" aria-labelledby="titulo-prs">
+        <div class="titulo-com-icone">
+          <img class="icone-secao" src="assets/mascote/trofeu.png" alt="" aria-hidden="true">
+          <div>
+            <h2 id="titulo-prs">Seus recordes pessoais</h2>
+            <p class="bloco-sub">Melhor carga registrada por exercício, com 1RM estimado (fórmula de Epley).</p>
+          </div>
+        </div>
+        <div id="lista-prs" class="lista-prs"></div>
+      </section>
+    </div>
+
+    <section class="bloco" aria-labelledby="titulo-historico">
+      <div class="bloco-topo">
+        <div class="titulo-com-icone">
+          <img class="icone-secao" src="assets/mascote/celular.png" alt="" aria-hidden="true">
+          <h2 id="titulo-historico">Últimos treinos</h2>
+        </div>
+        <div class="bloco-acoes">
+          <button type="button" id="btn-exportar-dados" class="btn btn-texto">Baixar dados</button>
+          <button type="button" id="btn-importar-dados" class="btn btn-texto">Importar</button>
+          <input type="file" id="input-importar" accept="application/json" class="sr-only" aria-label="Selecionar arquivo JSON de backup">
+        </div>
+      </div>
+      <ul class="historico" id="historico"></ul>
+    </section>
+  </section>
+
+  <section id="painel-biblioteca" role="tabpanel" aria-labelledby="aba-biblioteca" tabindex="0" class="painel" hidden>
+    <div class="bloco">
+      <div class="titulo-com-icone">
+        <img class="icone-secao" src="assets/mascote/coracao.png" alt="" aria-hidden="true">
+        <div>
+          <h2>Biblioteca de exercícios</h2>
+          <p class="bloco-sub">Execução passo a passo, dicas e os erros mais comuns de cada movimento.</p>
+        </div>
+      </div>
+
+      <div class="filtros">
+        <label class="campo">
+          <span>Buscar</span>
+          <input type="search" id="busca-exercicio" placeholder="Ex.: agachamento" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span>Grupo muscular</span>
+          <select id="filtro-grupo"><option value="">Todos</option></select>
+        </label>
+        <label class="campo">
+          <span>Equipamento</span>
+          <select id="filtro-equipamento"><option value="">Todos</option></select>
+        </label>
+        <label class="campo">
+          <span>Nível</span>
+          <select id="filtro-nivel"><option value="">Todos</option></select>
+        </label>
+      </div>
+
+      <p class="contagem" id="contagem-exercicios" role="status" aria-live="polite"></p>
+      <div class="grade-exercicios" id="grade-exercicios"></div>
+    </div>
+  </section>
+
+  <section id="painel-gerador" role="tabpanel" aria-labelledby="aba-gerador" tabindex="0" class="painel" hidden>
+    <div class="bloco">
+      <div class="titulo-com-icone">
+        <img class="icone-secao" src="assets/mascote/corda.png" alt="" aria-hidden="true">
+        <div>
+          <h2>Gerador de treino personalizado</h2>
+          <p class="bloco-sub">Monta a divisão, os exercícios, séries, repetições e descanso a partir do seu objetivo e do que você tem disponível.</p>
+        </div>
+      </div>
+
+      <form id="form-gerador" class="form-gerador">
+        <fieldset>
+          <legend>Objetivo</legend>
+          <div class="opcoes-radio" id="grupo-objetivo">
+            <label class="opcao"><input type="radio" name="objetivo" value="hipertrofia" checked><span>Hipertrofia<small>Ganhar massa muscular</small></span></label>
+            <label class="opcao"><input type="radio" name="objetivo" value="forca"><span>Força<small>Levantar mais carga</small></span></label>
+            <label class="opcao"><input type="radio" name="objetivo" value="resistencia"><span>Resistência<small>Aguentar mais volume</small></span></label>
+            <label class="opcao"><input type="radio" name="objetivo" value="emagrecimento"><span>Emagrecimento<small>Gasto calórico alto</small></span></label>
+          </div>
+        </fieldset>
+
+        <div class="linha-form">
+          <label class="campo">
+            <span>Nível de experiência</span>
+            <select id="gen-nivel">
+              <option value="iniciante">Iniciante (até 6 meses)</option>
+              <option value="intermediario" selected>Intermediário (6 meses a 2 anos)</option>
+              <option value="avancado">Avançado (2+ anos)</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span>Dias por semana</span>
+            <select id="gen-dias">
+              <option value="2">2 dias</option>
+              <option value="3">3 dias</option>
+              <option value="4" selected>4 dias</option>
+              <option value="5">5 dias</option>
+              <option value="6">6 dias</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span>Duração alvo por sessão</span>
+            <select id="gen-duracao">
+              <option value="30">~30 min (enxuto)</option>
+              <option value="45">~45 min</option>
+              <option value="60" selected>~60 min</option>
+              <option value="75">~75 min (completo)</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset>
+          <legend>Equipamento disponível</legend>
+          <div class="opcoes-check" id="grupo-equipamento"></div>
+        </fieldset>
+
+        <div class="form-acoes">
+          <button type="submit" class="btn btn-primario btn-grande">Gerar meu treino</button>
+          <button type="button" id="btn-imprimir" class="btn btn-secundario" hidden>Salvar como PDF</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="resultado-treino" class="resultado-treino" role="region" aria-live="polite" aria-label="Treino gerado"></div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <div class="container">
+    <p class="aviso">Conteúdo educativo. Não substitui a orientação de um profissional de educação física ou médico.</p>
+  </div>
+</footer>
+
+<dialog id="modal-registro" class="modal" aria-labelledby="titulo-modal">
+  <form method="dialog" id="form-registro" class="modal-conteudo">
+    <div class="modal-topo">
+      <h2 id="titulo-modal">Registrar treino</h2>
+      <button type="button" class="btn btn-icone" id="fechar-modal" aria-label="Fechar">✕</button>
+    </div>
+
+    <div class="modal-corpo">
+      <div class="linha-form">
+        <label class="campo">
+          <span>Data</span>
+          <input type="date" id="reg-data" required>
+        </label>
+        <label class="campo">
+          <span>Duração (min)</span>
+          <input type="number" id="reg-duracao" min="5" max="300" step="5" value="60">
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Grupos treinados</legend>
+        <div class="opcoes-check" id="reg-grupos"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Intensidade percebida</legend>
+        <div class="opcoes-radio intensidade" id="reg-intensidade">
+          <label class="opcao"><input type="radio" name="intensidade" value="1"><span>Leve</span></label>
+          <label class="opcao"><input type="radio" name="intensidade" value="2" checked><span>Moderado</span></label>
+          <label class="opcao"><input type="radio" name="intensidade" value="3"><span>Intenso</span></label>
+          <label class="opcao"><input type="radio" name="intensidade" value="4"><span>Máximo</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cargas <span class="legend-opcional">(opcional — é o que detecta seus recordes)</span></legend>
+        <div id="reg-series" class="series-lista"></div>
+        <button type="button" id="btn-add-serie" class="btn btn-secundario btn-pequeno">+ Adicionar exercício</button>
+      </fieldset>
+
+      <label class="campo">
+        <span>Notas</span>
+        <textarea id="reg-notas" rows="2" placeholder="Como foi o treino?"></textarea>
+      </label>
+    </div>
+
+    <div class="modal-rodape">
+      <button type="button" id="btn-excluir" class="btn btn-perigo" hidden>Excluir treino</button>
+      <div class="modal-rodape-dir">
+        <button type="button" id="btn-cancelar" class="btn btn-secundario">Cancelar</button>
+        <button type="submit" class="btn btn-primario">Salvar treino</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-exercicio" class="modal" aria-labelledby="titulo-exercicio">
+  <div class="modal-conteudo">
+    <div class="modal-topo">
+      <h2 id="titulo-exercicio">Exercício</h2>
+      <button type="button" class="btn btn-icone" id="fechar-exercicio" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-corpo" id="corpo-exercicio"></div>
+  </div>
+</dialog>
+
+<div id="celebracao" class="celebracao" hidden aria-hidden="true"></div>
+<div id="anuncio" class="sr-only" role="status" aria-live="assertive"></div>
+
+<script src="js/exercises.js?v=11"></script>
+<script src="js/mascote-embutido.js?v=11"></script>
+<script src="js/storage.js?v=11"></script>
+<script src="js/heatmap.js?v=11"></script>
+<script src="js/library.js?v=11"></script>
+<script src="js/generator.js?v=11"></script>
+<script src="js/app.js?v=11"></script>
+</body>
+</html>
