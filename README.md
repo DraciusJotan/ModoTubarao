@@ -8,11 +8,6 @@ Feito com HTML, CSS e JavaScript puro. Sem instalação, sem cadastro e sem serv
 
 <!-- Cole os links aqui quando publicar o projeto -->
 
-| | |
-|---|---|
-| **Site no ar** | _(em breve)_ |
-| **Repositório** | _(em breve)_ |
-
 ---
 
 ## Início
