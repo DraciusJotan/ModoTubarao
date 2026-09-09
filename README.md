@@ -4,11 +4,9 @@ Um site para acompanhar seus treinos de academia. Você registra o treino do dia
 
 Feito com HTML, CSS e JavaScript puro. Sem instalação, sem cadastro e sem servidor.
 
-## 🔗 Links
+## 🔗 Acesse o site
 
-<!-- Cole os links aqui quando publicar o projeto -->
-
----
+### **[Visualização](https://draciusjotan.github.io/ModoTubarao/)**
 
 ## Início
 
