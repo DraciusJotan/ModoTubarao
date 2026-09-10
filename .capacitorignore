@@ -1,0 +1,14 @@
+node_modules
+android
+ios
+.git
+.claude
+.claude-plugin
+docs
+README.md
+package.json
+package-lock.json
+capacitor.config.json
+capacitor.config.ts
+.gitignore
+.capacitorignore

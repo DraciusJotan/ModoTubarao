@@ -1,7 +1,123 @@
 let estado = Dados.carregar();
 
 const modalRegistro = document.getElementById('modal-registro');
+const modalConta = document.getElementById('modal-conta');
+const modalConfirmar = document.getElementById('modal-confirmar');
 const anuncio = document.getElementById('anuncio');
+
+// Substitui o confirm() nativo do navegador (feio e sem estilo) por um modal
+// no visual do site. Uso: if (await confirmarComMascote('Excluir X?')) { ... }
+function confirmarComMascote(mensagem) {
+  return new Promise(resolve => {
+    document.getElementById('confirmar-mensagem').textContent = mensagem;
+    const btnSim = document.getElementById('btn-confirmar-sim');
+    const btnNao = document.getElementById('btn-confirmar-nao');
+
+    function limpar(valor) {
+      btnSim.removeEventListener('click', aoSim);
+      btnNao.removeEventListener('click', aoNao);
+      modalConfirmar.removeEventListener('cancel', aoCancelar);
+      modalConfirmar.close();
+      resolve(valor);
+    }
+    function aoSim() { limpar(true); }
+    function aoNao() { limpar(false); }
+    function aoCancelar(evento) { evento.preventDefault(); limpar(false); }
+
+    btnSim.addEventListener('click', aoSim);
+    btnNao.addEventListener('click', aoNao);
+    modalConfirmar.addEventListener('cancel', aoCancelar);
+    modalConfirmar.showModal();
+  });
+}
+
+const AVATAR_PADRAO = 'assets/mascote/biceps.png';
+let perfilAtual = { nome: '', foto: '' };
+let usuarioLogado = null;
+
+function mostrarErroConta(mensagem) {
+  const erro = document.getElementById('conta-erro');
+  erro.textContent = mensagem;
+  erro.hidden = false;
+}
+
+function atualizarRotuloConta() {
+  document.getElementById('conta-rotulo').textContent =
+    perfilAtual.nome || (usuarioLogado ? usuarioLogado.email : 'Entrar');
+}
+
+// Recorta ao quadrado, reduz e comprime pra caber como miniatura no Firestore
+// (sem precisar do Firebase Storage, que hoje exige conta de faturamento).
+function comprimirImagem(arquivo) {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
+    leitor.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
+      img.onload = () => {
+        const tamanho = 160;
+        const lado = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = tamanho;
+        canvas.height = tamanho;
+        canvas.getContext('2d').drawImage(
+          img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, tamanho, tamanho
+        );
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = leitor.result;
+    };
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+function aoLogar(usuario) {
+  usuarioLogado = usuario;
+  document.getElementById('conta-explicacao').hidden = true;
+  document.getElementById('form-conta').hidden = true;
+  document.getElementById('conta-logado').hidden = false;
+  document.getElementById('conta-email-atual').textContent = usuario.email;
+  atualizarRotuloConta();
+
+  Dados.aoSalvar = dados => Nuvem.salvarNuvem(dados);
+
+  Nuvem.carregarPerfil(usuario.uid).then(perfil => {
+    perfilAtual = perfil || { nome: '', foto: '' };
+    document.getElementById('perfil-nome').value = perfilAtual.nome || '';
+    document.getElementById('perfil-foto-preview').src = perfilAtual.foto || AVATAR_PADRAO;
+    atualizarRotuloConta();
+  });
+
+  Nuvem.carregarNuvem(usuario.uid).then(dadosNuvem => {
+    const temDadosNuvem = dadosNuvem && Object.keys(dadosNuvem.treinos || {}).length > 0;
+    const temDadosLocais = Object.keys(estado.treinos).length > 0;
+
+    if (temDadosNuvem) {
+      estado = Object.assign(Dados.padrao(), dadosNuvem);
+      Dados.salvar(estado);
+      aplicarTema(estado.tema);
+      document.getElementById('meta-semanal').value = estado.metaSemanal;
+      renderizarTudo();
+      anunciar('Treinos sincronizados da nuvem.');
+    } else if (temDadosLocais) {
+      Nuvem.salvarNuvem(estado);
+      anunciar('Seus treinos foram enviados para a nuvem.');
+    }
+  });
+}
+
+function aoDeslogar() {
+  usuarioLogado = null;
+  perfilAtual = { nome: '', foto: '' };
+  document.getElementById('conta-explicacao').hidden = false;
+  document.getElementById('form-conta').hidden = false;
+  document.getElementById('conta-logado').hidden = true;
+  document.getElementById('perfil-nome').value = '';
+  document.getElementById('perfil-foto-preview').src = AVATAR_PADRAO;
+  atualizarRotuloConta();
+  Dados.aoSalvar = null;
+}
 
 function iniciarAbas() {
   const abas = [...document.querySelectorAll('[role="tab"]')];
@@ -333,6 +449,8 @@ function renderizarTudo() {
   renderizarBarras(stats);
   renderizarRecordes(treinos);
   renderizarHistorico(treinos);
+
+  if (typeof Calorias !== 'undefined') Calorias.renderizar();
 }
 
 function renderizarBarras(stats) {
@@ -453,12 +571,8 @@ function renderizarHistorico(treinos) {
 
 function exportarDados() {
   const blob = new Blob([JSON.stringify(estado, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `modo-tubarao-backup-${chaveData(new Date())}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  Exportar.salvar(blob, `modo-tubarao-backup-${chaveData(new Date())}.json`)
+    .catch(() => anunciar('Não foi possível salvar o backup.'));
 }
 
 function importarDados(arquivo) {
@@ -515,6 +629,7 @@ function iniciar() {
     abrirRegistro(chaveData(new Date()), dia.grupos);
     ativar(abas[0]);
   });
+  Calorias.iniciar();
 
   document.getElementById('btn-tema').addEventListener('click', () => {
     estado.tema = estado.tema === 'claro' ? 'escuro' : 'claro';
@@ -540,9 +655,9 @@ function iniciar() {
   document.getElementById('btn-cancelar').addEventListener('click', () => modalRegistro.close());
   document.getElementById('fechar-modal').addEventListener('click', () => modalRegistro.close());
 
-  document.getElementById('btn-excluir').addEventListener('click', () => {
+  document.getElementById('btn-excluir').addEventListener('click', async () => {
     const chave = document.getElementById('reg-data').value;
-    if (!confirm(`Excluir o treino de ${formatarData(chave)}?`)) return;
+    if (!(await confirmarComMascote(`Excluir o treino de ${formatarData(chave)}?`))) return;
     delete estado.treinos[chave];
     Dados.salvar(estado);
     modalRegistro.close();
@@ -567,6 +682,126 @@ function iniciar() {
     if (evento.target.files[0]) importarDados(evento.target.files[0]);
     evento.target.value = '';
   });
+
+  document.getElementById('btn-conta').addEventListener('click', () => {
+    if (!Nuvem.configValido) {
+      anunciar('Sincronização com a nuvem ainda não foi configurada.');
+      return;
+    }
+    document.getElementById('conta-erro').hidden = true;
+    modalConta.showModal();
+  });
+  document.getElementById('fechar-conta').addEventListener('click', () => modalConta.close());
+
+  document.getElementById('form-conta').addEventListener('submit', evento => {
+    evento.preventDefault();
+    const email = document.getElementById('conta-email').value.trim();
+    const senha = document.getElementById('conta-senha').value;
+    Nuvem.entrar(email, senha)
+      .then(() => modalConta.close())
+      .catch(e => mostrarErroConta(Nuvem.mensagemErro(e.code)));
+  });
+
+  document.getElementById('btn-cadastrar').addEventListener('click', () => {
+    const email = document.getElementById('conta-email').value.trim();
+    const senha = document.getElementById('conta-senha').value;
+    if (!email || senha.length < 8) {
+      mostrarErroConta('Preencha e-mail e uma senha com pelo menos 8 caracteres.');
+      return;
+    }
+    Nuvem.cadastrar(email, senha)
+      .then(() => modalConta.close())
+      .catch(e => mostrarErroConta(Nuvem.mensagemErro(e.code)));
+  });
+
+  document.getElementById('btn-sair').addEventListener('click', () => {
+    Nuvem.sair();
+    modalConta.close();
+  });
+
+  document.getElementById('btn-trocar-foto')
+    .addEventListener('click', () => document.getElementById('input-foto-perfil').click());
+
+  document.getElementById('input-foto-perfil').addEventListener('change', evento => {
+    const arquivo = evento.target.files[0];
+    evento.target.value = '';
+    if (!arquivo) return;
+    comprimirImagem(arquivo)
+      .then(dataUrl => {
+        perfilAtual.foto = dataUrl;
+        document.getElementById('perfil-foto-preview').src = dataUrl;
+      })
+      .catch(() => anunciar('Não foi possível usar essa imagem.'));
+  });
+
+  document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
+    perfilAtual.nome = document.getElementById('perfil-nome').value.trim();
+    Nuvem.salvarPerfil(perfilAtual)
+      .then(() => {
+        atualizarRotuloConta();
+        anunciar('Perfil salvo.');
+      })
+      .catch(() => anunciar('Não foi possível salvar o perfil agora.'));
+  });
+
+  document.getElementById('btn-esqueci-senha').addEventListener('click', () => {
+    const email = document.getElementById('conta-email').value.trim();
+    document.getElementById('conta-erro').hidden = true;
+    if (!email) {
+      mostrarErroConta('Digite seu e-mail no campo acima primeiro.');
+      return;
+    }
+    Nuvem.recuperarSenha(email)
+      .then(() => anunciar('Enviamos um e-mail com instruções pra redefinir sua senha.'))
+      .catch(e => mostrarErroConta(Nuvem.mensagemErro(e.code)));
+  });
+
+  document.getElementById('btn-alterar-senha').addEventListener('click', () => {
+    const atual = document.getElementById('senha-atual').value;
+    const nova = document.getElementById('senha-nova').value;
+    const erro = document.getElementById('senha-erro');
+    erro.hidden = true;
+    if (!atual || nova.length < 8) {
+      erro.textContent = 'Preencha a senha atual e uma nova senha com pelo menos 8 caracteres.';
+      erro.hidden = false;
+      return;
+    }
+    Nuvem.alterarSenha(atual, nova)
+      .then(() => {
+        document.getElementById('senha-atual').value = '';
+        document.getElementById('senha-nova').value = '';
+        anunciar('Senha alterada com sucesso.');
+      })
+      .catch(e => {
+        erro.textContent = Nuvem.mensagemErro(e.code);
+        erro.hidden = false;
+      });
+  });
+
+  document.getElementById('btn-excluir-conta').addEventListener('click', async () => {
+    const senha = document.getElementById('excluir-senha').value;
+    const erro = document.getElementById('excluir-erro');
+    erro.hidden = true;
+    if (!senha) {
+      erro.textContent = 'Digite sua senha pra confirmar.';
+      erro.hidden = false;
+      return;
+    }
+    if (!(await confirmarComMascote('Excluir sua conta e os treinos salvos na nuvem? Essa ação não pode ser desfeita.'))) return;
+
+    Nuvem.excluirConta(senha)
+      .then(() => {
+        modalConta.close();
+        document.getElementById('excluir-senha').value = '';
+        anunciar('Conta excluída.');
+      })
+      .catch(e => {
+        erro.textContent = Nuvem.mensagemErro(e.code);
+        erro.hidden = false;
+      });
+  });
+
+  Nuvem.iniciar({ aoLogar, aoDeslogar });
 
   renderizarTudo();
 }

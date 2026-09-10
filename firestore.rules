@@ -1,0 +1,47 @@
+// Regras do Firestore do Modo Tubarão.
+// Cole isso no Firebase Console > Firestore Database > Regras > Publicar.
+//
+// Cada usuário só lê/escreve o próprio documento (uid == dono), e a escrita
+// só é aceita se o formato dos dados bater com o que o app realmente envia —
+// isso barra alguém autenticado tentando gravar lixo/campos extras no seu doc.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Treinos, meta semanal, tema e o registro de calorias — um documento por usuário.
+    match /usuarios/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+             ['versao', 'metaSemanal', 'tema', 'treinos', 'alimentacao', 'metaCalorica'])
+        && request.resource.data.versao is number
+        && request.resource.data.metaSemanal is number
+        && request.resource.data.metaSemanal >= 1
+        && request.resource.data.metaSemanal <= 7
+        && request.resource.data.tema in ['claro', 'escuro']
+        && request.resource.data.treinos is map
+        && (!('alimentacao' in request.resource.data) || request.resource.data.alimentacao is map)
+        && (!('metaCalorica' in request.resource.data) || (
+             request.resource.data.metaCalorica is number
+             && request.resource.data.metaCalorica >= 0
+             && request.resource.data.metaCalorica <= 10000
+           ));
+    }
+
+    // Nome e foto de perfil (foto é uma miniatura em base64, por isso o limite de tamanho).
+    match /perfis/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nome', 'foto'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() <= 60
+        && request.resource.data.foto is string
+        && request.resource.data.foto.size() <= 200000;
+    }
+
+    // Nega tudo que não foi explicitamente liberado acima.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

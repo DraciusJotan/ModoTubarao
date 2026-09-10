@@ -2,8 +2,11 @@
 const CHAVE = 'gymgraph:v1';
 
 const Dados = {
+  // Enquanto logado, aponta para Nuvem.salvarNuvem — ver js/nuvem.js.
+  aoSalvar: null,
+
   padrao() {
-    return { versao: 1, metaSemanal: 3, tema: 'claro', treinos: {} };
+    return { versao: 1, metaSemanal: 3, tema: 'claro', treinos: {}, alimentacao: {}, metaCalorica: 2000 };
   },
 
   carregar() {
@@ -21,6 +24,7 @@ const Dados = {
   salvar(dados) {
     try {
       localStorage.setItem(CHAVE, JSON.stringify(dados));
+      if (typeof Dados.aoSalvar === 'function') Dados.aoSalvar(dados);
       return true;
     } catch (e) {
       console.warn('Não foi possível salvar:', e);

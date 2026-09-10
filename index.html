@@ -2,12 +2,34 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Só permite carregar script/estilo/imagem daqui e do CDN oficial do Firebase; e só falar com a API do Firebase pela rede. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com;
+  style-src 'self';
+  img-src 'self' data:;
+  font-src 'self';
+  connect-src 'self' https://*.googleapis.com;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Modo Tubarão — seu treino em um gráfico</title>
-<meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Tudo no navegador, sem cadastro.">
+<meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Seus dados ficam no navegador, com sincronização opcional na nuvem.">
 <!-- O ?v= evita cache antigo: suba o número a cada alteração em css/ ou js/ -->
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=21">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
+
+<!-- PWA: permite "Adicionar à Tela de Início" no iPhone (Safari) e no Android -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a203b">
+<link rel="apple-touch-icon" href="assets/icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Modo Tubarão">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -43,6 +65,9 @@
         <span class="tema-icone" aria-hidden="true">☾</span>
         <span class="sr-only">Alternar tema claro e escuro</span>
       </button>
+      <button type="button" id="btn-conta" class="btn btn-secundario">
+        <span aria-hidden="true">👤</span> <span id="conta-rotulo">Entrar</span>
+      </button>
       <button type="button" id="btn-registrar-topo" class="btn btn-primario">
         <span aria-hidden="true">+</span> Registrar treino
       </button>
@@ -61,6 +86,9 @@
       </button>
       <button type="button" role="tab" id="aba-gerador" aria-controls="painel-gerador" aria-selected="false" tabindex="-1" class="aba">
         <img class="icone-aba" src="assets/mascote/corda.png" alt="" aria-hidden="true">Gerador de treino
+      </button>
+      <button type="button" role="tab" id="aba-calorias" aria-controls="painel-calorias" aria-selected="false" tabindex="-1" class="aba">
+        <img class="icone-aba" src="assets/mascote/garrafa.png" alt="" aria-hidden="true">Calorias
       </button>
     </div>
   </div>
@@ -90,7 +118,7 @@
     <div id="boas-vindas" class="vazio-inicial" hidden>
       <img class="vazio-mascote" src="assets/mascote/grafico.png" alt="" aria-hidden="true">
       <h2>Comece marcando seu primeiro treino</h2>
-      <p>O Modo Tubarão transforma sua constância em um mapa de calor anual. Cada quadrado é um dia — quanto mais escuro o azul, mais intenso foi o treino. Nada é enviado para servidores: seus dados ficam salvos apenas neste navegador.</p>
+      <p>O Modo Tubarão transforma sua constância em um mapa de calor anual. Cada quadrado é um dia — quanto mais escuro o azul, mais intenso foi o treino. Seus dados ficam salvos neste navegador, com sincronização opcional na nuvem se você criar uma conta.</p>
       <button type="button" class="btn btn-primario btn-grande" data-abrir-registro>Registrar meu primeiro treino</button>
     </div>
 
@@ -306,6 +334,34 @@
 
     <div id="resultado-treino" class="resultado-treino" role="region" aria-live="polite" aria-label="Treino gerado"></div>
   </section>
+
+  <section id="painel-calorias" role="tabpanel" aria-labelledby="aba-calorias" tabindex="0" class="painel" hidden>
+    <div class="bloco">
+      <div class="bloco-topo">
+        <div class="titulo-com-icone">
+          <img class="icone-secao" src="assets/mascote/garrafa.png" alt="" aria-hidden="true">
+          <div>
+            <h2>Calorias do dia</h2>
+            <p class="bloco-sub" id="cal-data-legenda">Hoje</p>
+          </div>
+        </div>
+        <div class="bloco-acoes">
+          <button type="button" id="cal-dia-anterior" class="btn btn-icone" aria-label="Dia anterior">←</button>
+          <input type="date" id="cal-data" class="select-mini" aria-label="Escolher dia">
+          <button type="button" id="cal-dia-seguinte" class="btn btn-icone" aria-label="Próximo dia">→</button>
+        </div>
+      </div>
+
+      <div class="cartoes-stats" id="cal-resumo"></div>
+
+      <label class="campo-inline">
+        <span>Meta diária (kcal)</span>
+        <input type="number" id="cal-meta" class="select-mini" min="800" max="6000" step="50">
+      </label>
+    </div>
+
+    <div id="cal-refeicoes"></div>
+  </section>
 </main>
 
 <footer class="rodape">
@@ -315,6 +371,7 @@
 </footer>
 
 <dialog id="modal-registro" class="modal" aria-labelledby="titulo-modal">
+  <img class="mascote-enfeite" src="assets/mascote/halteres.png" alt="" aria-hidden="true">
   <form method="dialog" id="form-registro" class="modal-conteudo">
     <div class="modal-topo">
       <h2 id="titulo-modal">Registrar treino</h2>
@@ -380,15 +437,122 @@
   </div>
 </dialog>
 
+<dialog id="modal-conta" class="modal" aria-labelledby="titulo-conta">
+  <img class="mascote-enfeite" src="assets/mascote/biceps.png" alt="" aria-hidden="true">
+  <div class="modal-conteudo">
+    <div class="modal-topo">
+      <h2 id="titulo-conta">Sua conta</h2>
+      <button type="button" class="btn btn-icone" id="fechar-conta" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <p class="bloco-sub" id="conta-explicacao">Crie uma conta pra sincronizar seus treinos entre aparelhos e nunca perder o histórico.</p>
+
+      <form id="form-conta">
+        <label class="campo">
+          <span>E-mail</span>
+          <input type="email" id="conta-email" required autocomplete="email">
+        </label>
+        <label class="campo">
+          <span>Senha</span>
+          <input type="password" id="conta-senha" required minlength="8" autocomplete="current-password">
+        </label>
+        <p class="erro-conta" id="conta-erro" role="alert" hidden></p>
+        <div class="form-acoes">
+          <button type="submit" id="btn-entrar" class="btn btn-primario">Entrar</button>
+          <button type="button" id="btn-cadastrar" class="btn btn-secundario">Criar conta</button>
+        </div>
+        <button type="button" id="btn-esqueci-senha" class="btn btn-texto btn-pequeno">Esqueci minha senha</button>
+      </form>
+
+      <div id="conta-logado" hidden>
+        <div class="perfil-avatar-linha">
+          <img id="perfil-foto-preview" class="perfil-avatar" src="assets/mascote/biceps.png" alt="Sua foto de perfil">
+          <div>
+            <button type="button" id="btn-trocar-foto" class="btn btn-secundario btn-pequeno">Trocar foto</button>
+            <input type="file" id="input-foto-perfil" accept="image/*" class="sr-only" aria-label="Escolher foto de perfil">
+          </div>
+        </div>
+
+        <label class="campo">
+          <span>Nome</span>
+          <input type="text" id="perfil-nome" placeholder="Como quer ser chamado?" maxlength="40">
+        </label>
+
+        <p>Logado como <strong id="conta-email-atual"></strong></p>
+        <p class="bloco-sub">Seus treinos estão sincronizados na nuvem.</p>
+
+        <div class="form-acoes">
+          <button type="button" id="btn-salvar-perfil" class="btn btn-primario">Salvar perfil</button>
+          <button type="button" id="btn-sair" class="btn btn-secundario">Sair da conta</button>
+        </div>
+
+        <details class="zona-config">
+          <summary>Alterar senha</summary>
+          <label class="campo">
+            <span>Senha atual</span>
+            <input type="password" id="senha-atual" autocomplete="current-password">
+          </label>
+          <label class="campo">
+            <span>Nova senha</span>
+            <input type="password" id="senha-nova" autocomplete="new-password" minlength="8">
+          </label>
+          <p class="erro-conta" id="senha-erro" role="alert" hidden></p>
+          <button type="button" id="btn-alterar-senha" class="btn btn-secundario">Alterar senha</button>
+        </details>
+
+        <details class="zona-perigo">
+          <summary>Excluir conta</summary>
+          <p class="bloco-sub">Isso apaga sua conta e os treinos salvos na nuvem. O que já está salvo neste navegador continua aqui.</p>
+          <label class="campo">
+            <span>Confirme sua senha</span>
+            <input type="password" id="excluir-senha" autocomplete="current-password">
+          </label>
+          <p class="erro-conta" id="excluir-erro" role="alert" hidden></p>
+          <button type="button" id="btn-excluir-conta" class="btn btn-perigo">Excluir minha conta</button>
+        </details>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="modal-confirmar" class="modal modal-pequeno" aria-labelledby="titulo-confirmar">
+  <img class="mascote-enfeite" src="assets/mascote/coracao.png" alt="" aria-hidden="true">
+  <div class="modal-conteudo">
+    <div class="modal-topo">
+      <h2 id="titulo-confirmar">Tem certeza?</h2>
+    </div>
+    <div class="modal-corpo">
+      <p id="confirmar-mensagem"></p>
+    </div>
+    <div class="modal-rodape">
+      <div class="modal-rodape-dir">
+        <button type="button" id="btn-confirmar-nao" class="btn btn-secundario">Cancelar</button>
+        <button type="button" id="btn-confirmar-sim" class="btn btn-perigo">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <div id="celebracao" class="celebracao" hidden aria-hidden="true"></div>
 <div id="anuncio" class="sr-only" role="status" aria-live="assertive"></div>
 
-<script src="js/exercises.js?v=11"></script>
-<script src="js/mascote-embutido.js?v=11"></script>
-<script src="js/storage.js?v=11"></script>
-<script src="js/heatmap.js?v=11"></script>
-<script src="js/library.js?v=11"></script>
-<script src="js/generator.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/exportar.js?v=21"></script>
+<script src="js/exercises.js?v=21"></script>
+<script src="js/mascote-embutido.js?v=21"></script>
+<script src="js/storage.js?v=21"></script>
+<script src="js/heatmap.js?v=21"></script>
+<script src="js/library.js?v=21"></script>
+<script src="js/generator.js?v=21"></script>
+<script src="js/alimentos.js?v=21"></script>
+<script src="js/calorias.js?v=21"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js?v=21"></script>
+<script src="js/nuvem.js?v=21"></script>
+
+<script src="js/app.js?v=21"></script>
 </body>
 </html>

@@ -26,7 +26,23 @@ const NIVEIS_PERMITIDOS = {
   avancado: ['iniciante', 'intermediario', 'avancado']
 };
 
+// Dias de treino espalhados de forma equilibrada pela semana (com folga entre eles
+// quando dá), pra dar nome de dia de verdade em vez de "Treino A/B/C".
+const DIAS_SEMANA_POR_QTD = {
+  2: ['Segunda-feira', 'Quinta-feira'],
+  3: ['Segunda-feira', 'Quarta-feira', 'Sexta-feira'],
+  4: ['Segunda-feira', 'Terça-feira', 'Quinta-feira', 'Sexta-feira'],
+  5: ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'],
+  6: ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+};
+
 function montarDivisao(dias, nivel) {
+  const divisao = construirDivisao(dias, nivel);
+  const semana = DIAS_SEMANA_POR_QTD[dias] || DIAS_SEMANA_POR_QTD[6];
+  return divisao.map((dia, indice) => ({ ...dia, nome: semana[indice] || dia.nome }));
+}
+
+function construirDivisao(dias, nivel) {
   if (dias === 2) {
     return [
       { nome: 'Treino A', foco: 'corpo-inteiro', titulo: 'Corpo inteiro' },
@@ -186,7 +202,7 @@ const Gerador = {
       Gerador.gerar(aoMarcarFeito);
     });
 
-    document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
+    document.getElementById('btn-imprimir').addEventListener('click', () => Gerador.exportarPDF());
   },
 
   gerar(aoMarcarFeito) {
@@ -211,9 +227,87 @@ const Gerador = {
     };
 
     const treino = gerarTreino(config);
+    Gerador.ultimoTreino = treino;
+    Gerador.ultimoConfig = config;
     Gerador.renderizar(treino, config, aoMarcarFeito);
     document.getElementById('btn-imprimir').hidden = false;
     saida.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  exportarPDF() {
+    const treino = Gerador.ultimoTreino;
+    const config = Gerador.ultimoConfig;
+    if (!treino || !window.jspdf) return;
+
+    const rotulosObjetivo = {
+      hipertrofia: 'Hipertrofia', forca: 'Força',
+      resistencia: 'Resistência', emagrecimento: 'Emagrecimento'
+    };
+    const parametros = PARAMETROS[config.objetivo];
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const margemX = 40;
+    const larguraUtil = doc.internal.pageSize.getWidth() - margemX * 2;
+    const alturaPagina = doc.internal.pageSize.getHeight();
+    let y = 54;
+
+    function novaLinhaSeNecessario(espacoNecessario) {
+      if (y + espacoNecessario > alturaPagina - 40) {
+        doc.addPage();
+        y = 54;
+      }
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(17);
+    doc.text('Modo Tubarão — Plano de treino', margemX, y);
+    y += 22;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(
+      `Objetivo: ${rotulosObjetivo[config.objetivo]}   ·   Nível: ${NIVEIS[config.nivel]}   ·   Repetições: ${parametros.reps}   ·   Descanso: ${parametros.descanso}   ·   Sessão: ~${config.duracao} min`,
+      margemX, y, { maxWidth: larguraUtil }
+    );
+    y += 26;
+
+    treino.forEach(dia => {
+      novaLinhaSeNecessario(60);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(`${dia.nome} — ${dia.titulo}`, margemX, y);
+      y += 16;
+
+      doc.setFontSize(9.5);
+      doc.setTextColor(90);
+      doc.text('Exercício', margemX, y);
+      doc.text('Séries', margemX + 260, y);
+      doc.text('Reps', margemX + 330, y);
+      doc.text('Descanso', margemX + 400, y);
+      doc.setTextColor(0);
+      y += 4;
+      doc.setDrawColor(200);
+      doc.line(margemX, y, margemX + larguraUtil, y);
+      y += 14;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      dia.exercicios.forEach(item => {
+        novaLinhaSeNecessario(18);
+        doc.text(item.ex.nome, margemX, y, { maxWidth: 245 });
+        doc.text(String(item.series), margemX + 260, y);
+        doc.text(String(item.reps), margemX + 330, y);
+        doc.text(String(item.descanso), margemX + 400, y);
+        y += 17;
+      });
+      y += 14;
+    });
+
+    const blob = doc.output('blob');
+    Exportar.salvar(blob, `modo-tubarao-treino-${chaveData(new Date())}.pdf`)
+      .catch(() => anunciar('Não foi possível salvar o PDF.'));
   },
 
   renderizar(treino, config, aoMarcarFeito) {

@@ -337,14 +337,10 @@ async function exportarImagem(treinos, estatisticas) {
   ctx.fillStyle = CARTAZ.traco;
   ctx.fillRect(margem, altura - 40, largura - margem * 2, 1);
   microRotulo('modo tubarão · seu treino em um gráfico', margem, altura - 20, CARTAZ.texto);
-  microRotulo('dados no próprio navegador', largura - margem, altura - 20, CARTAZ.fraco, 'right');
+  microRotulo(chaveData(new Date()), largura - margem, altura - 20, CARTAZ.fraco, 'right');
 
   canvas.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `modo-tubarao-${chaveData(new Date())}.png`;
-    link.click();
-    URL.revokeObjectURL(url);
+    Exportar.salvar(blob, `modo-tubarao-${chaveData(new Date())}.png`)
+      .catch(() => anunciar('Não foi possível salvar a imagem.'));
   }, 'image/png');
 }
