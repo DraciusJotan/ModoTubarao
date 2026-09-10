@@ -1,17 +1,32 @@
 let estado = Dados.carregar();
 
+let snapshotRegistro = null;
 const modalRegistro = document.getElementById('modal-registro');
 const modalConta = document.getElementById('modal-conta');
 const modalConfirmar = document.getElementById('modal-confirmar');
 const anuncio = document.getElementById('anuncio');
 
 // Substitui o confirm() nativo do navegador (feio e sem estilo) por um modal
-// no visual do site. Uso: if (await confirmarComMascote('Excluir X?')) { ... }
-function confirmarComMascote(mensagem) {
+// no visual do site. Resolve com 'principal', 'secundario' ou null (fechou sem
+// escolher, ex.: Esc). Uso: if ((await confirmarComMascote('Excluir X?')) === 'principal') { ... }
+function confirmarComMascote(mensagem, opcoes = {}) {
+  const {
+    titulo = 'Tem certeza?',
+    textoPrincipal = 'Confirmar',
+    textoSecundario = 'Cancelar',
+    classePrincipal = 'btn-perigo',
+    classeSecundario = 'btn-secundario'
+  } = opcoes;
+
   return new Promise(resolve => {
+    document.getElementById('titulo-confirmar').textContent = titulo;
     document.getElementById('confirmar-mensagem').textContent = mensagem;
     const btnSim = document.getElementById('btn-confirmar-sim');
     const btnNao = document.getElementById('btn-confirmar-nao');
+    btnSim.textContent = textoPrincipal;
+    btnNao.textContent = textoSecundario;
+    btnSim.className = `btn ${classePrincipal}`;
+    btnNao.className = `btn ${classeSecundario}`;
 
     function limpar(valor) {
       btnSim.removeEventListener('click', aoSim);
@@ -20,9 +35,12 @@ function confirmarComMascote(mensagem) {
       modalConfirmar.close();
       resolve(valor);
     }
-    function aoSim() { limpar(true); }
-    function aoNao() { limpar(false); }
-    function aoCancelar(evento) { evento.preventDefault(); limpar(false); }
+    function aoSim() { limpar('principal'); }
+    function aoNao() { limpar('secundario'); }
+    function aoCancelar(evento) {
+      evento.preventDefault();
+      limpar(null);
+    }
 
     btnSim.addEventListener('click', aoSim);
     btnNao.addEventListener('click', aoNao);
@@ -33,7 +51,36 @@ function confirmarComMascote(mensagem) {
 
 const AVATAR_PADRAO = 'assets/mascote/biceps.png';
 let perfilAtual = { nome: '', foto: '' };
+let nomeOriginal = '';
 let usuarioLogado = null;
+
+// Confirma com o usuário antes de fechar um modal com alterações não salvas.
+// `mudou()` diz se há diferença; `salvar()` roda ao escolher "Salvar";
+// `reverter()` devolve os campos em tela ao valor original ao escolher "Descartar"
+// (sem isso, o campo continua mostrando o texto digitado mesmo sem ter sido salvo).
+async function confirmarFechamento(modal, mudou, salvar, mensagem, reverter) {
+  if (!mudou()) { modal.close(); return; }
+  const resultado = await confirmarComMascote(mensagem, {
+    titulo: 'Alterações não salvas',
+    textoPrincipal: 'Salvar',
+    classePrincipal: 'btn-primario',
+    textoSecundario: 'Descartar',
+    classeSecundario: 'btn-perigo'
+  });
+  if (resultado === 'principal') {
+    try {
+      await salvar();
+      modal.close();
+    } catch (e) {
+      // Falhou salvar: deixa o modal aberto (a mensagem de erro já aparece
+      // via salvarTreino/salvarPerfilAgora) pra não perder a alteração.
+    }
+  } else if (resultado === 'secundario') {
+    if (reverter) reverter();
+    modal.close();
+  }
+  // null (Esc/backdrop): continua editando, não fecha.
+}
 
 function mostrarErroConta(mensagem) {
   const erro = document.getElementById('conta-erro');
@@ -46,24 +93,79 @@ function atualizarRotuloConta() {
     perfilAtual.nome || (usuarioLogado ? usuarioLogado.email : 'Entrar');
 }
 
+// Navegador nenhum decodifica HEIC/HEIF (formato padrão da câmera em vários
+// Android, principalmente Samsung com "formato de imagem eficiente" ligado).
+// heic2any só é baixado se a foto realmente vier nesse formato — quem manda
+// JPEG/PNG (a maioria) nunca carrega isso, então não pesa o app no dia a dia.
+let heic2anyPromise = null;
+function carregarHeic2any() {
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (!heic2anyPromise) {
+    heic2anyPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      script.onload = () => resolve(window.heic2any);
+      script.onerror = () => reject(new Error('Não foi possível carregar o conversor de HEIC.'));
+      document.head.appendChild(script);
+    });
+  }
+  return heic2anyPromise;
+}
+
+function pareceHeic(arquivo) {
+  const tipo = (arquivo.type || '').toLowerCase();
+  const nome = (arquivo.name || '').toLowerCase();
+  return tipo === 'image/heic' || tipo === 'image/heif' || nome.endsWith('.heic') || nome.endsWith('.heif');
+}
+
 // Recorta ao quadrado, reduz e comprime pra caber como miniatura no Firestore
 // (sem precisar do Firebase Storage, que hoje exige conta de faturamento).
-function comprimirImagem(arquivo) {
+//
+// Fotos tiradas direto da câmera do celular são bem mais pesadas (vários MB,
+// 4000x3000px+) e costumam ter metadado de rotação (EXIF) que o <img> comum
+// nem sempre respeita. createImageBitmap com imageOrientation:'from-image'
+// lida com isso melhor e é o caminho preferido; caindo pra trás só em
+// navegadores/WebViews mais antigos que não têm esse método.
+async function comprimirImagem(arquivoOriginal) {
+  let arquivo = arquivoOriginal;
+
+  if (pareceHeic(arquivoOriginal)) {
+    const heic2any = await carregarHeic2any();
+    // Qualidade mais baixa aqui só acelera a conversão — a imagem final vai
+    // ser reduzida a 160x160 de qualquer jeito no passo seguinte.
+    const convertido = await heic2any({ blob: arquivoOriginal, toType: 'image/jpeg', quality: 0.7 });
+    arquivo = Array.isArray(convertido) ? convertido[0] : convertido;
+  }
+
+  const tamanho = 160;
+  const canvas = document.createElement('canvas');
+  canvas.width = tamanho;
+  canvas.height = tamanho;
+  const ctx = canvas.getContext('2d');
+
+  if (window.createImageBitmap) {
+    try {
+      const bitmap = await createImageBitmap(arquivo, { imageOrientation: 'from-image' });
+      const lado = Math.min(bitmap.width, bitmap.height);
+      ctx.drawImage(
+        bitmap, (bitmap.width - lado) / 2, (bitmap.height - lado) / 2, lado, lado, 0, 0, tamanho, tamanho
+      );
+      if (bitmap.close) bitmap.close();
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } catch (erro) {
+      console.warn('createImageBitmap falhou, tentando modo alternativo:', erro);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
     leitor.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
     leitor.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
+      img.onerror = () => reject(new Error('Arquivo de imagem inválido ou formato não suportado.'));
       img.onload = () => {
-        const tamanho = 160;
         const lado = Math.min(img.width, img.height);
-        const canvas = document.createElement('canvas');
-        canvas.width = tamanho;
-        canvas.height = tamanho;
-        canvas.getContext('2d').drawImage(
-          img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, tamanho, tamanho
-        );
+        ctx.drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, tamanho, tamanho);
         resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
       img.src = leitor.result;
@@ -82,12 +184,17 @@ function aoLogar(usuario) {
 
   Dados.aoSalvar = dados => Nuvem.salvarNuvem(dados);
 
-  Nuvem.carregarPerfil(usuario.uid).then(perfil => {
-    perfilAtual = perfil || { nome: '', foto: '' };
-    document.getElementById('perfil-nome').value = perfilAtual.nome || '';
-    document.getElementById('perfil-foto-preview').src = perfilAtual.foto || AVATAR_PADRAO;
-    atualizarRotuloConta();
-  });
+  document.getElementById('perfil-avatar-wrap').classList.add('carregando');
+  Nuvem.carregarPerfil(usuario.uid)
+    .then(perfil => {
+      perfilAtual = perfil || { nome: '', foto: '' };
+      nomeOriginal = perfilAtual.nome || '';
+      document.getElementById('perfil-nome').value = nomeOriginal;
+      document.getElementById('perfil-foto-preview').src = perfilAtual.foto || AVATAR_PADRAO;
+      atualizarRotuloConta();
+    })
+    .catch(e => console.error('Falha ao carregar perfil:', e))
+    .finally(() => document.getElementById('perfil-avatar-wrap').classList.remove('carregando'));
 
   Nuvem.carregarNuvem(usuario.uid).then(dadosNuvem => {
     const temDadosNuvem = dadosNuvem && Object.keys(dadosNuvem.treinos || {}).length > 0;
@@ -110,11 +217,13 @@ function aoLogar(usuario) {
 function aoDeslogar() {
   usuarioLogado = null;
   perfilAtual = { nome: '', foto: '' };
+  nomeOriginal = '';
   document.getElementById('conta-explicacao').hidden = false;
   document.getElementById('form-conta').hidden = false;
   document.getElementById('conta-logado').hidden = true;
   document.getElementById('perfil-nome').value = '';
   document.getElementById('perfil-foto-preview').src = AVATAR_PADRAO;
+  document.getElementById('perfil-avatar-wrap').classList.remove('carregando');
   atualizarRotuloConta();
   Dados.aoSalvar = null;
 }
@@ -305,7 +414,13 @@ function linhaSerie(valores = {}) {
   return linha;
 }
 
-function abrirRegistro(chave, gruposPre) {
+let chaveRegistroAberto = null;
+let gruposPreRegistroAberto = null;
+
+// Preenche os campos do formulário a partir do que está salvo em estado.treinos
+// (ou em branco, se for um treino novo) — sem abrir o modal. Usado tanto pra
+// abrir o modal quanto pra reverter os campos quando o usuário descarta alterações.
+function preencherFormularioRegistro(chave, gruposPre) {
   const treino = estado.treinos[chave];
   document.getElementById('reg-data').value = chave;
   document.getElementById('reg-duracao').value = treino ? treino.duracao : 60;
@@ -326,8 +441,24 @@ function abrirRegistro(chave, gruposPre) {
   container.textContent = '';
   const series = treino && treino.series && treino.series.length ? treino.series : [{}];
   series.forEach(s => container.appendChild(linhaSerie(s)));
+}
 
+function abrirRegistro(chave, gruposPre) {
+  chaveRegistroAberto = chave;
+  gruposPreRegistroAberto = gruposPre;
+  preencherFormularioRegistro(chave, gruposPre);
   modalRegistro.showModal();
+  snapshotRegistro = tirarSnapshotRegistro();
+}
+
+function tirarSnapshotRegistro() {
+  const dados = lerFormulario();
+  delete dados.atualizadoEm;
+  return JSON.stringify(dados);
+}
+
+function registroMudou() {
+  return snapshotRegistro !== null && tirarSnapshotRegistro() !== snapshotRegistro;
 }
 
 function lerFormulario() {
@@ -365,6 +496,7 @@ function salvarTreino() {
   estado.treinos[treino.data] = treino;
   Dados.salvar(estado);
   renderizarTudo();
+  modalRegistro.close();
 
   const superados = recordes.filter(pr => pr.anterior);
   if (superados.length) celebrarRecordes(superados);
@@ -652,12 +784,25 @@ function iniciar() {
     .addEventListener('click', () => document.getElementById('reg-series').appendChild(linhaSerie()));
 
   document.getElementById('form-registro').addEventListener('submit', salvarTreino);
-  document.getElementById('btn-cancelar').addEventListener('click', () => modalRegistro.close());
-  document.getElementById('fechar-modal').addEventListener('click', () => modalRegistro.close());
+  modalRegistro.addEventListener('close', () => { snapshotRegistro = null; });
+
+  function tentarFecharRegistro() {
+    confirmarFechamento(modalRegistro, registroMudou, salvarTreino,
+      'Você tem alterações não salvas nesse treino.',
+      () => preencherFormularioRegistro(chaveRegistroAberto, gruposPreRegistroAberto));
+  }
+  document.getElementById('btn-cancelar').addEventListener('click', tentarFecharRegistro);
+  document.getElementById('fechar-modal').addEventListener('click', tentarFecharRegistro);
+  modalRegistro.addEventListener('cancel', evento => {
+    if (registroMudou()) {
+      evento.preventDefault();
+      tentarFecharRegistro();
+    }
+  });
 
   document.getElementById('btn-excluir').addEventListener('click', async () => {
     const chave = document.getElementById('reg-data').value;
-    if (!(await confirmarComMascote(`Excluir o treino de ${formatarData(chave)}?`))) return;
+    if ((await confirmarComMascote(`Excluir o treino de ${formatarData(chave)}?`)) !== 'principal') return;
     delete estado.treinos[chave];
     Dados.salvar(estado);
     modalRegistro.close();
@@ -691,7 +836,22 @@ function iniciar() {
     document.getElementById('conta-erro').hidden = true;
     modalConta.showModal();
   });
-  document.getElementById('fechar-conta').addEventListener('click', () => modalConta.close());
+  function nomeMudou() {
+    return usuarioLogado != null
+      && document.getElementById('perfil-nome').value.trim() !== nomeOriginal;
+  }
+  function tentarFecharConta() {
+    confirmarFechamento(modalConta, nomeMudou, () => salvarPerfilAgora(),
+      'Seu nome foi alterado mas ainda não foi salvo.',
+      () => { document.getElementById('perfil-nome').value = nomeOriginal; });
+  }
+  document.getElementById('fechar-conta').addEventListener('click', tentarFecharConta);
+  modalConta.addEventListener('cancel', evento => {
+    if (nomeMudou()) {
+      evento.preventDefault();
+      tentarFecharConta();
+    }
+  });
 
   document.getElementById('form-conta').addEventListener('submit', evento => {
     evento.preventDefault();
@@ -726,22 +886,54 @@ function iniciar() {
     const arquivo = evento.target.files[0];
     evento.target.value = '';
     if (!arquivo) return;
+    const erro = document.getElementById('perfil-erro');
+    erro.classList.remove('sucesso');
+    erro.hidden = true;
     comprimirImagem(arquivo)
       .then(dataUrl => {
         perfilAtual.foto = dataUrl;
         document.getElementById('perfil-foto-preview').src = dataUrl;
+        // Salva na hora — não depende do usuário lembrar de clicar em "Salvar perfil" depois.
+        return Nuvem.salvarPerfil(perfilAtual);
       })
-      .catch(() => anunciar('Não foi possível usar essa imagem.'));
+      .then(() => {
+        erro.textContent = 'Foto salva.';
+        erro.classList.add('sucesso');
+        erro.hidden = false;
+      })
+      .catch(e => {
+        console.error('Falha ao processar/salvar foto de perfil:', arquivo.type, arquivo.name, e);
+        erro.classList.remove('sucesso');
+        erro.textContent =
+          `Não foi possível salvar essa foto. Tente outra ou tente de novo. (${arquivo.type || 'formato desconhecido'}: ${e.message || e})`;
+        erro.hidden = false;
+      });
   });
 
-  document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
+  function salvarPerfilAgora() {
     perfilAtual.nome = document.getElementById('perfil-nome').value.trim();
-    Nuvem.salvarPerfil(perfilAtual)
+    const erro = document.getElementById('perfil-erro');
+    erro.classList.remove('sucesso');
+    erro.hidden = true;
+    return Nuvem.salvarPerfil(perfilAtual)
       .then(() => {
+        nomeOriginal = perfilAtual.nome;
         atualizarRotuloConta();
         anunciar('Perfil salvo.');
+        erro.textContent = 'Perfil salvo.';
+        erro.classList.add('sucesso');
+        erro.hidden = false;
       })
-      .catch(() => anunciar('Não foi possível salvar o perfil agora.'));
+      .catch(e => {
+        console.error('Falha ao salvar perfil:', e);
+        erro.textContent = 'Não foi possível salvar o perfil agora. Tente de novo.';
+        erro.hidden = false;
+        throw e;
+      });
+  }
+
+  document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
+    salvarPerfilAgora().catch(() => {});
   });
 
   document.getElementById('btn-esqueci-senha').addEventListener('click', () => {
@@ -787,7 +979,7 @@ function iniciar() {
       erro.hidden = false;
       return;
     }
-    if (!(await confirmarComMascote('Excluir sua conta e os treinos salvos na nuvem? Essa ação não pode ser desfeita.'))) return;
+    if ((await confirmarComMascote('Excluir sua conta e os treinos salvos na nuvem? Essa ação não pode ser desfeita.')) !== 'principal') return;
 
     Nuvem.excluirConta(senha)
       .then(() => {

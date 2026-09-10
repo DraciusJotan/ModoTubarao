@@ -2,14 +2,17 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- Só permite carregar script/estilo/imagem daqui e do CDN oficial do Firebase; e só falar com a API do Firebase pela rede. -->
+<!-- Só permite carregar script/estilo/imagem daqui e dos CDNs usados (Firebase, jsPDF, conversor de HEIC).
+     'unsafe-eval' é necessário pro decodificador de HEIC (roda em WebAssembly dentro de um worker
+     e usa eval internamente) — sem isso a conversão trava sem erro nenhum aparecer. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com;
+  script-src 'self' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-eval';
   style-src 'self';
   img-src 'self' data:;
   font-src 'self';
-  connect-src 'self' https://*.googleapis.com;
+  connect-src 'self' https://*.googleapis.com https://cdn.jsdelivr.net;
+  worker-src 'self' blob:;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -19,7 +22,7 @@
 <title>Modo Tubarão — seu treino em um gráfico</title>
 <meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Seus dados ficam no navegador, com sincronização opcional na nuvem.">
 <!-- O ?v= evita cache antigo: suba o número a cada alteração em css/ ou js/ -->
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=30">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
 
 <!-- PWA: permite "Adicionar à Tela de Início" no iPhone (Safari) e no Android -->
@@ -466,10 +469,14 @@
 
       <div id="conta-logado" hidden>
         <div class="perfil-avatar-linha">
-          <img id="perfil-foto-preview" class="perfil-avatar" src="assets/mascote/biceps.png" alt="Sua foto de perfil">
+          <div class="perfil-avatar-wrap" id="perfil-avatar-wrap">
+            <img id="perfil-foto-preview" class="perfil-avatar" src="assets/mascote/biceps.png" alt="Sua foto de perfil">
+            <span class="spinner-foto" aria-hidden="true"></span>
+          </div>
           <div>
             <button type="button" id="btn-trocar-foto" class="btn btn-secundario btn-pequeno">Trocar foto</button>
             <input type="file" id="input-foto-perfil" accept="image/*" class="sr-only" aria-label="Escolher foto de perfil">
+            <p class="erro-conta" id="perfil-erro" role="alert" hidden></p>
           </div>
         </div>
 
@@ -537,22 +544,22 @@
 <div id="anuncio" class="sr-only" role="status" aria-live="assertive"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/exportar.js?v=21"></script>
-<script src="js/exercises.js?v=21"></script>
-<script src="js/mascote-embutido.js?v=21"></script>
-<script src="js/storage.js?v=21"></script>
-<script src="js/heatmap.js?v=21"></script>
-<script src="js/library.js?v=21"></script>
-<script src="js/generator.js?v=21"></script>
-<script src="js/alimentos.js?v=21"></script>
-<script src="js/calorias.js?v=21"></script>
+<script src="js/exportar.js?v=30"></script>
+<script src="js/exercises.js?v=30"></script>
+<script src="js/mascote-embutido.js?v=30"></script>
+<script src="js/storage.js?v=30"></script>
+<script src="js/heatmap.js?v=30"></script>
+<script src="js/library.js?v=30"></script>
+<script src="js/generator.js?v=30"></script>
+<script src="js/alimentos.js?v=30"></script>
+<script src="js/calorias.js?v=30"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=21"></script>
-<script src="js/nuvem.js?v=21"></script>
+<script src="js/firebase-config.js?v=30"></script>
+<script src="js/nuvem.js?v=30"></script>
 
-<script src="js/app.js?v=21"></script>
+<script src="js/app.js?v=30"></script>
 </body>
 </html>
