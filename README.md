@@ -6,7 +6,7 @@ Feito com HTML, CSS e JavaScript puro. Sem instalação, sem cadastro e sem serv
 
 ## 🔗 Acesse o site
 
-### **[Visualização](https://draciusjotan.github.io/ModoTubarao/)**
+### **[Visualização](https://draciusjotan.github.io/SHARKFIT/)**
 
 ## Início
 
