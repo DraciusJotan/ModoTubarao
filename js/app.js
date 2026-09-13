@@ -6,6 +6,7 @@ let snapshotRegistro = null;
 const modalRegistro = document.getElementById('modal-registro');
 const modalConta = document.getElementById('modal-conta');
 const modalConfirmar = document.getElementById('modal-confirmar');
+const modalSuporte = document.getElementById('modal-suporte');
 const anuncio = document.getElementById('anuncio');
 
 // Substitui o confirm() nativo do navegador (feio e sem estilo) por um modal
@@ -502,11 +503,13 @@ function salvarTreino() {
 
   const superados = recordes.filter(pr => pr.anterior);
   if (superados.length) {
-    Videos.tocar('assets/videos/recorde-pr.mp4', { onFim: () => celebrarRecordes(superados) });
+    celebrarRecordes(superados);
   } else {
-    Videos.tocar('assets/videos/treino-concluido.mp4', {
-      onFim: () => anunciar(`Treino de ${formatarData(treino.data)} salvo.`)
+    Videos.mostrarToast('assets/videos/treino-concluido.mp4', {
+      classe: 'faixa-treino',
+      texto: `Treino de ${formatarData(treino.data)} salvo.`
     });
+    anunciar(`Treino de ${formatarData(treino.data)} salvo.`);
   }
 }
 
@@ -523,26 +526,13 @@ function celebrarRecordes(recordes) {
   const detalhe = `${principal.nome}: ${principal.peso} kg × ${principal.reps} reps` +
     (principal.anterior ? ` (antes: ${principal.anterior.peso} kg × ${principal.anterior.reps})` : '');
 
-  const faixa = document.createElement('div');
-  faixa.className = 'faixa-pr';
-  faixa.setAttribute('role', 'status');
-
-  const mascote = document.createElement('img');
-  mascote.src = 'assets/mascote/trofeu.png';
-  mascote.alt = '';
-
-  const corpo = document.createElement('div');
-  corpo.textContent = texto;
-  const small = document.createElement('small');
-  small.textContent = detalhe;
-  corpo.appendChild(small);
-
-  faixa.append(mascote, corpo);
-  document.body.appendChild(faixa);
+  Videos.mostrarToast('assets/videos/recorde-pr.mp4', {
+    classe: 'faixa-pr',
+    texto,
+    detalhe
+  });
 
   anunciar(`${texto} ${detalhe}`);
-
-  setTimeout(() => faixa.remove(), 4000);
 }
 
 function soltarConfete() {
@@ -773,6 +763,9 @@ function iniciar() {
     aplicarTema(estado.tema);
     Dados.salvar(estado);
   });
+
+  document.getElementById('btn-suporte').addEventListener('click', () => modalSuporte.showModal());
+  document.getElementById('fechar-suporte').addEventListener('click', () => modalSuporte.close());
 
   document.getElementById('guia-mascote').addEventListener('click', () => {
     indiceFrase = (indiceFrase + 1) % FRASES_SOLTAS.length;

@@ -22,7 +22,7 @@
 <title>SharkFit — seu treino em um gráfico</title>
 <meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Seus dados ficam no navegador, com sincronização opcional na nuvem.">
 <!-- O ?v= evita cache antigo: suba o número a cada alteração em css/ ou js/ -->
-<link rel="stylesheet" href="css/style.css?v=32">
+<link rel="stylesheet" href="css/style.css?v=39">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
 
 <!-- PWA: permite "Adicionar à Tela de Início" no iPhone (Safari) e no Android -->
@@ -36,7 +36,10 @@
 </head>
 <body>
 <div id="tela-splash" class="tela-splash" aria-hidden="true">
-  <video id="video-splash" src="assets/videos/splash.mp4" autoplay muted playsinline></video>
+  <div class="tela-splash-moldura">
+    <video id="video-splash" src="assets/videos/splash.mp4" autoplay muted playsinline></video>
+  </div>
+  <p class="tela-splash-nome">SharkFit</p>
 </div>
 
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -68,6 +71,9 @@
       </div>
     </div>
     <div class="topo-acoes">
+      <button type="button" id="btn-suporte" class="btn btn-icone" aria-label="Suporte e dúvidas frequentes">
+        <span aria-hidden="true">❓</span>
+      </button>
       <button type="button" id="btn-tema" class="btn btn-icone" aria-pressed="false">
         <span class="tema-icone" aria-hidden="true">☾</span>
         <span class="sr-only">Alternar tema claro e escuro</span>
@@ -526,6 +532,60 @@
   </div>
 </dialog>
 
+<dialog id="modal-suporte" class="modal" aria-labelledby="titulo-suporte">
+  <img class="mascote-enfeite" src="assets/mascote/coracao.png" alt="" aria-hidden="true">
+  <div class="modal-conteudo">
+    <div class="modal-topo">
+      <h2 id="titulo-suporte">Suporte</h2>
+      <button type="button" class="btn btn-icone" id="fechar-suporte" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <p class="bloco-sub">Dúvidas comuns sobre o SharkFit. Não achou o que precisa? Fale com a gente lá embaixo.</p>
+
+      <div class="faq-lista">
+        <details>
+          <summary>Preciso de internet para usar o SharkFit?</summary>
+          <p>Não. Seus treinos ficam salvos neste aparelho e funcionam offline. Com uma conta, eles também sincronizam na nuvem quando você estiver online.</p>
+        </details>
+        <details>
+          <summary>Como crio uma conta e sincronizo entre aparelhos?</summary>
+          <p>Toque em "Entrar" no topo e depois em "Criar conta". Com uma conta, seus treinos ficam salvos na nuvem e você acessa do celular e do computador.</p>
+        </details>
+        <details>
+          <summary>Esqueci minha senha, e agora?</summary>
+          <p>Na tela de login, toque em "Esqueci minha senha" e informe seu e-mail. Você vai receber um link para criar uma nova senha.</p>
+        </details>
+        <details>
+          <summary>Meus dados estão seguros?</summary>
+          <p>Sim. Seu acesso é protegido por senha e a comunicação com o servidor é criptografada. Sem uma conta, tudo fica só neste aparelho.</p>
+        </details>
+        <details>
+          <summary>Como funciona o mapa de calor anual?</summary>
+          <p>Cada quadrado representa um dia do ano — quanto mais treinos e mais intensos, mais escuro o azul. É uma forma rápida de ver sua constância ao longo do tempo.</p>
+        </details>
+        <details>
+          <summary>Como faço backup ou exporto meus treinos?</summary>
+          <p>Na aba "Meu progresso" há opções para exportar um backup em JSON ou gerar um PDF do seu plano de treino.</p>
+        </details>
+        <details>
+          <summary>Como excluo minha conta?</summary>
+          <p>Em "Sua conta", abra "Excluir conta", confirme sua senha e toque em "Excluir minha conta". O que já estava salvo neste aparelho continua aqui.</p>
+        </details>
+        <details>
+          <summary>Como instalo o SharkFit no meu celular?</summary>
+          <p>No navegador, use "Adicionar à tela de início" (Android) ou "Adicionar à Tela de Início" no Safari (iPhone). O ícone do SharkFit aparece como um app normal.</p>
+        </details>
+      </div>
+
+      <div class="suporte-contato">
+        <p>Não resolveu? Fale direto com a gente:</p>
+        <a class="btn btn-primario" href="mailto:jotadracius@gmail.com?subject=Suporte%20SharkFit">✉ Fale conosco</a>
+        <p>jotadracius@gmail.com</p>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="modal-confirmar" class="modal modal-pequeno" aria-labelledby="titulo-confirmar">
   <img class="mascote-enfeite" src="assets/mascote/coracao.png" alt="" aria-hidden="true">
   <div class="modal-conteudo">
@@ -547,33 +607,29 @@
 <div id="celebracao" class="celebracao" hidden aria-hidden="true"></div>
 <div id="anuncio" class="sr-only" role="status" aria-live="assertive"></div>
 
-<div id="video-overlay" class="video-overlay" hidden aria-hidden="true">
-  <video id="video-overlay-elemento" playsinline muted></video>
-</div>
-
 <div id="banner-offline" class="banner-offline" hidden role="status">
   <video src="assets/videos/sem-conexao.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
   <p>Sem conexão — seus dados continuam salvos aqui.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/exportar.js?v=32"></script>
-<script src="js/videos.js?v=32"></script>
-<script src="js/exercises.js?v=32"></script>
-<script src="js/mascote-embutido.js?v=32"></script>
-<script src="js/storage.js?v=32"></script>
-<script src="js/heatmap.js?v=32"></script>
-<script src="js/library.js?v=32"></script>
-<script src="js/generator.js?v=32"></script>
-<script src="js/alimentos.js?v=32"></script>
-<script src="js/calorias.js?v=32"></script>
+<script src="js/exportar.js?v=39"></script>
+<script src="js/videos.js?v=39"></script>
+<script src="js/exercises.js?v=39"></script>
+<script src="js/mascote-embutido.js?v=39"></script>
+<script src="js/storage.js?v=39"></script>
+<script src="js/heatmap.js?v=39"></script>
+<script src="js/library.js?v=39"></script>
+<script src="js/generator.js?v=39"></script>
+<script src="js/alimentos.js?v=39"></script>
+<script src="js/calorias.js?v=39"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=32"></script>
-<script src="js/nuvem.js?v=32"></script>
+<script src="js/firebase-config.js?v=39"></script>
+<script src="js/nuvem.js?v=39"></script>
 
-<script src="js/app.js?v=32"></script>
+<script src="js/app.js?v=39"></script>
 </body>
 </html>

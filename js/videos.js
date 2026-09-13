@@ -1,41 +1,34 @@
-// Overlay de vídeo em tela cheia, usado pelas animações de "treino concluído"
-// e "recorde pessoal". Um único <video> reaproveitado pros dois casos.
+// Toast com vídeo embutido, usado pelas animações de "treino concluído" e
+// "recorde pessoal". Aparece como parte da própria tela (mesmo estilo das
+// faixas de aviso), nunca cobrindo o site inteiro — quem faz isso é só o splash.
 const Videos = (() => {
-  let overlay, video, aoFim;
+  function mostrarToast(src, { classe = 'faixa-treino', texto = '', detalhe = '', duracao = 4000 } = {}) {
+    const faixa = document.createElement('div');
+    faixa.className = classe;
+    faixa.setAttribute('role', 'status');
 
-  function elementos() {
-    if (!overlay) {
-      overlay = document.getElementById('video-overlay');
-      video = document.getElementById('video-overlay-elemento');
-      video.addEventListener('ended', finalizar);
-      video.addEventListener('error', finalizar);
-      overlay.addEventListener('click', finalizar);
-    }
-    return { overlay, video };
-  }
-
-  function finalizar() {
-    const { overlay, video } = elementos();
-    if (overlay.hidden) return;
-    overlay.hidden = true;
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
-    const callback = aoFim;
-    aoFim = null;
-    if (callback) callback();
-  }
-
-  function tocar(src, { onFim } = {}) {
-    const { overlay, video } = elementos();
-    aoFim = onFim || null;
+    const video = document.createElement('video');
     video.src = src;
-    overlay.hidden = false;
-    video.currentTime = 0;
-    video.play().catch(() => finalizar());
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    const corpo = document.createElement('div');
+    corpo.textContent = texto;
+    if (detalhe) {
+      const small = document.createElement('small');
+      small.textContent = detalhe;
+      corpo.appendChild(small);
+    }
+
+    faixa.append(video, corpo);
+    document.body.appendChild(faixa);
+    video.play().catch(() => {});
+
+    setTimeout(() => faixa.remove(), duracao);
   }
 
-  return { tocar };
+  return { mostrarToast };
 })();
 
 // Splash: cobre a tela até o vídeo terminar (ou, no máximo, alguns segundos —
