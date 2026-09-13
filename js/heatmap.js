@@ -227,7 +227,7 @@ async function exportarImagem(treinos, estatisticas) {
   ctx.restore();
 
   let y = 62;
-  texto('MODO TUBARÃO', margem, y, { tamanho: 44, display: true });
+  texto('SHARKFIT', margem, y, { tamanho: 44, display: true });
   ctx.fillStyle = CARTAZ.ouro;
   ctx.fillRect(margem, y + 14, 132, 5);
   microRotulo(`Últimos 12 meses · ${formatarData(chaveData(new Date()))}`, margem, y + 42);
@@ -336,11 +336,11 @@ async function exportarImagem(treinos, estatisticas) {
 
   ctx.fillStyle = CARTAZ.traco;
   ctx.fillRect(margem, altura - 40, largura - margem * 2, 1);
-  microRotulo('modo tubarão · seu treino em um gráfico', margem, altura - 20, CARTAZ.texto);
+  microRotulo('sharkfit · seu treino em um gráfico', margem, altura - 20, CARTAZ.texto);
   microRotulo(chaveData(new Date()), largura - margem, altura - 20, CARTAZ.fraco, 'right');
 
   canvas.toBlob(blob => {
-    Exportar.salvar(blob, `modo-tubarao-${chaveData(new Date())}.png`)
+    Exportar.salvar(blob, `sharkfit-${chaveData(new Date())}.png`)
       .catch(() => anunciar('Não foi possível salvar a imagem.'));
   }, 'image/png');
 }

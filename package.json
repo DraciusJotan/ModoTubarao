@@ -1,5 +1,5 @@
 {
-  "name": "projeto2-app",
+  "name": "sharkfit",
   "version": "1.0.0",
   "description": "Um site para acompanhar seus treinos de academia. Você registra o treino do dia e ele vira um mapa de calor de um ano inteiro, igual ao gráfico de contribuições do GitHub — quanto mais escuro o quadrado, mais pesado foi o treino.",
   "main": "index.js",

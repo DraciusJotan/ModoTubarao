@@ -261,7 +261,7 @@ const Gerador = {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(17);
-    doc.text('Modo Tubarão — Plano de treino', margemX, y);
+    doc.text('SharkFit — Plano de treino', margemX, y);
     y += 22;
 
     doc.setFont('helvetica', 'normal');
@@ -306,7 +306,7 @@ const Gerador = {
     });
 
     const blob = doc.output('blob');
-    Exportar.salvar(blob, `modo-tubarao-treino-${chaveData(new Date())}.pdf`)
+    Exportar.salvar(blob, `sharkfit-treino-${chaveData(new Date())}.pdf`)
       .catch(() => anunciar('Não foi possível salvar o PDF.'));
   },
 

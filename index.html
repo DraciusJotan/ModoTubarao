@@ -19,22 +19,26 @@
 ">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Modo Tubarão — seu treino em um gráfico</title>
+<title>SharkFit — seu treino em um gráfico</title>
 <meta name="description" content="Registre seus treinos, veja sua consistência em um mapa de calor anual, consulte guias de exercícios e gere treinos personalizados. Seus dados ficam no navegador, com sincronização opcional na nuvem.">
 <!-- O ?v= evita cache antigo: suba o número a cada alteração em css/ ou js/ -->
-<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/style.css?v=32">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>">
 
 <!-- PWA: permite "Adicionar à Tela de Início" no iPhone (Safari) e no Android -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a203b">
 <link rel="apple-touch-icon" href="assets/icones/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="Modo Tubarão">
+<meta name="apple-mobile-web-app-title" content="SharkFit">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
+<div id="tela-splash" class="tela-splash" aria-hidden="true">
+  <video id="video-splash" src="assets/videos/splash.mp4" autoplay muted playsinline></video>
+</div>
+
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
 <div class="oceano descendo" id="oceano" aria-hidden="true">
@@ -59,7 +63,7 @@
         <img src="assets/mascote/biceps.png" alt="">
       </span>
       <div>
-        <h1>Modo Tubarão</h1>
+        <h1>SharkFit</h1>
         <p class="marca-sub">Seu treino, em um gráfico</p>
       </div>
     </div>
@@ -103,14 +107,14 @@
 
     <section class="hero" aria-labelledby="hero-titulo">
       <div class="hero-conteudo">
-        <h2 class="hero-titulo" id="hero-titulo">Entre no <span>Modo Tubarão</span></h2>
+        <h2 class="hero-titulo" id="hero-titulo">Entre no <span>SharkFit</span></h2>
         <p class="hero-texto">Um ano inteiro de treino em uma tela só. Registre a sessão, veja a sequência crescer e deixe o tubarão te cobrar.</p>
         <div class="hero-acoes">
           <button type="button" class="btn btn-primario btn-grande" data-abrir-registro>Registrar treino de hoje</button>
         </div>
         <div class="guia">
           <button type="button" class="guia-mascote" id="guia-mascote"
-                  aria-label="Mascote do Modo Tubarão: ouvir outra dica" aria-describedby="guia-balao">
+                  aria-label="Mascote do SharkFit: ouvir outra dica" aria-describedby="guia-balao">
             <img src="assets/mascote/halteres.png" alt="" aria-hidden="true">
           </button>
           <p class="guia-balao" id="guia-balao">Bora treinar?</p>
@@ -121,7 +125,7 @@
     <div id="boas-vindas" class="vazio-inicial" hidden>
       <img class="vazio-mascote" src="assets/mascote/grafico.png" alt="" aria-hidden="true">
       <h2>Comece marcando seu primeiro treino</h2>
-      <p>O Modo Tubarão transforma sua constância em um mapa de calor anual. Cada quadrado é um dia — quanto mais escuro o azul, mais intenso foi o treino. Seus dados ficam salvos neste navegador, com sincronização opcional na nuvem se você criar uma conta.</p>
+      <p>O SharkFit transforma sua constância em um mapa de calor anual. Cada quadrado é um dia — quanto mais escuro o azul, mais intenso foi o treino. Seus dados ficam salvos neste navegador, com sincronização opcional na nuvem se você criar uma conta.</p>
       <button type="button" class="btn btn-primario btn-grande" data-abrir-registro>Registrar meu primeiro treino</button>
     </div>
 
@@ -543,23 +547,33 @@
 <div id="celebracao" class="celebracao" hidden aria-hidden="true"></div>
 <div id="anuncio" class="sr-only" role="status" aria-live="assertive"></div>
 
+<div id="video-overlay" class="video-overlay" hidden aria-hidden="true">
+  <video id="video-overlay-elemento" playsinline muted></video>
+</div>
+
+<div id="banner-offline" class="banner-offline" hidden role="status">
+  <video src="assets/videos/sem-conexao.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+  <p>Sem conexão — seus dados continuam salvos aqui.</p>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/exportar.js?v=30"></script>
-<script src="js/exercises.js?v=30"></script>
-<script src="js/mascote-embutido.js?v=30"></script>
-<script src="js/storage.js?v=30"></script>
-<script src="js/heatmap.js?v=30"></script>
-<script src="js/library.js?v=30"></script>
-<script src="js/generator.js?v=30"></script>
-<script src="js/alimentos.js?v=30"></script>
-<script src="js/calorias.js?v=30"></script>
+<script src="js/exportar.js?v=32"></script>
+<script src="js/videos.js?v=32"></script>
+<script src="js/exercises.js?v=32"></script>
+<script src="js/mascote-embutido.js?v=32"></script>
+<script src="js/storage.js?v=32"></script>
+<script src="js/heatmap.js?v=32"></script>
+<script src="js/library.js?v=32"></script>
+<script src="js/generator.js?v=32"></script>
+<script src="js/alimentos.js?v=32"></script>
+<script src="js/calorias.js?v=32"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=30"></script>
-<script src="js/nuvem.js?v=30"></script>
+<script src="js/firebase-config.js?v=32"></script>
+<script src="js/nuvem.js?v=32"></script>
 
-<script src="js/app.js?v=30"></script>
+<script src="js/app.js?v=32"></script>
 </body>
 </html>

@@ -777,6 +777,42 @@ table.exercicios tr:last-child td { border-bottom: none; }
 }
 .faixa-pr img { width: 84px; height: auto; flex-shrink: 0; }
 .faixa-pr small { display: block; font-weight: 500; font-size: .8rem; color: var(--texto-fraco); margin-top: .2rem; }
+
+/* Vídeos: splash de abertura, celebração (treino concluído / recorde) e aviso offline. */
+.tela-splash {
+  position: fixed; inset: 0; z-index: 500;
+  background: #eef0f2;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .4s ease;
+}
+.tela-splash.escondendo { opacity: 0; pointer-events: none; }
+.tela-splash video { width: 100%; height: 100%; object-fit: contain; }
+
+.video-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: #eef0f2;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.video-overlay[hidden] { display: none; }
+.video-overlay video { width: 100%; height: 100%; object-fit: contain; }
+
+.banner-offline {
+  position: fixed; left: 1rem; bottom: 1rem; z-index: 150;
+  background: var(--bg-elevado); color: var(--texto);
+  border: 2px solid var(--traco); border-radius: var(--raio);
+  box-shadow: var(--sombra-forte);
+  padding: .6rem .9rem .6rem .6rem;
+  display: flex; align-items: center; gap: .7rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  font-size: .82rem; font-weight: 600;
+}
+.banner-offline[hidden] { display: none; }
+.banner-offline video {
+  width: 46px; height: 46px; border-radius: 50%; object-fit: cover; object-position: center 60%;
+  flex-shrink: 0;
+}
+.banner-offline p { margin: 0; }
 @keyframes surgir { from { opacity: 0; transform: translate(-50%, -12px) scale(.94); } }
 
 .rodape { border-top: 1px solid var(--borda); background: var(--bg-elevado); padding: 1.5rem 0; margin-top: 2rem; }

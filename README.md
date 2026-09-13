@@ -1,4 +1,4 @@
-# Modo Tubarão 🦈
+# SharkFit 🦈
 
 Um site para acompanhar seus treinos de academia. Você registra o treino do dia e ele vira um mapa de calor de um ano inteiro, igual ao gráfico de contribuições do GitHub — quanto mais escuro o quadrado, mais pesado foi o treino.
 
@@ -12,7 +12,7 @@ Feito com HTML, CSS e JavaScript puro. Sem instalação, sem cadastro e sem serv
 
 A porta de entrada. O tubarão avisa quantos treinos faltam para fechar a meta da semana, e o fundo é um oceano que escurece conforme você rola a página.
 
-![Tela inicial do Modo Tubarão](docs/titulo.png)
+![Tela inicial do SharkFit](docs/titulo.png)
 
 ## Painel — mapa de consistência
 

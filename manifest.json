@@ -1,6 +1,6 @@
 {
-  "name": "Modo Tubarão",
-  "short_name": "Modo Tubarão",
+  "name": "SharkFit",
+  "short_name": "SharkFit",
   "description": "Acompanhe seus treinos com um mapa de calor de consistência.",
   "start_url": "./index.html",
   "scope": "./",

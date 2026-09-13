@@ -1,4 +1,4 @@
-// Regras do Firestore do Modo Tubarão.
+// Regras do Firestore do SharkFit.
 // Cole isso no Firebase Console > Firestore Database > Regras > Publicar.
 //
 // Cada usuário só lê/escreve o próprio documento (uid == dono), e a escrita

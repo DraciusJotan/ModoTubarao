@@ -1,3 +1,5 @@
+iniciarSplash();
+
 let estado = Dados.carregar();
 
 let snapshotRegistro = null;
@@ -499,8 +501,13 @@ function salvarTreino() {
   modalRegistro.close();
 
   const superados = recordes.filter(pr => pr.anterior);
-  if (superados.length) celebrarRecordes(superados);
-  else anunciar(`Treino de ${formatarData(treino.data)} salvo.`);
+  if (superados.length) {
+    Videos.tocar('assets/videos/recorde-pr.mp4', { onFim: () => celebrarRecordes(superados) });
+  } else {
+    Videos.tocar('assets/videos/treino-concluido.mp4', {
+      onFim: () => anunciar(`Treino de ${formatarData(treino.data)} salvo.`)
+    });
+  }
 }
 
 function anunciar(texto) {
@@ -534,9 +541,6 @@ function celebrarRecordes(recordes) {
   document.body.appendChild(faixa);
 
   anunciar(`${texto} ${detalhe}`);
-
-  const semAnimacao = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!semAnimacao) soltarConfete();
 
   setTimeout(() => faixa.remove(), 4000);
 }
@@ -625,7 +629,7 @@ function renderizarRecordes(treinos) {
   if (!recordes.length) {
     const vazio = document.createElement('p');
     vazio.className = 'vazio';
-    vazio.textContent = 'Registre cargas nos seus treinos para o Modo Tubarão começar a detectar seus recordes automaticamente.';
+    vazio.textContent = 'Registre cargas nos seus treinos para o SharkFit começar a detectar seus recordes automaticamente.';
     container.appendChild(vazio);
     return;
   }
@@ -703,7 +707,7 @@ function renderizarHistorico(treinos) {
 
 function exportarDados() {
   const blob = new Blob([JSON.stringify(estado, null, 2)], { type: 'application/json' });
-  Exportar.salvar(blob, `modo-tubarao-backup-${chaveData(new Date())}.json`)
+  Exportar.salvar(blob, `sharkfit-backup-${chaveData(new Date())}.json`)
     .catch(() => anunciar('Não foi possível salvar o backup.'));
 }
 
@@ -720,7 +724,7 @@ function importarDados(arquivo) {
       renderizarTudo();
       anunciar('Backup importado com sucesso.');
     } catch (e) {
-      alert('Não foi possível ler este arquivo. Use um backup exportado pelo Modo Tubarão.');
+      alert('Não foi possível ler este arquivo. Use um backup exportado pelo SharkFit.');
     }
   };
   leitor.readAsText(arquivo);
@@ -762,6 +766,7 @@ function iniciar() {
     ativar(abas[0]);
   });
   Calorias.iniciar();
+  iniciarAvisoConexao();
 
   document.getElementById('btn-tema').addEventListener('click', () => {
     estado.tema = estado.tema === 'claro' ? 'escuro' : 'claro';
